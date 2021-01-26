@@ -24,7 +24,7 @@ for i in tqdm(range(2,51)):
     # sleep is used to make sure that I dont spam the server too much
     time.sleep(2)
     try:
-        my_url = "https://www.domain.com.au/sale/melbourne-region-vic/apartment/?bedrooms=2-any&price=0-1000000&excludeunderoffer=1&page=2"
+        my_url = "https://www.domain.com.au/sale/melbourne-region-vic/apartment/?bedrooms=2-any&price=0-1000000&excludeunderoffer=1&page={}".format(i)
         req = urllib.request.Request(my_url,headers={'User-Agent': "Magic Browser"})
         con = uReq(req)
         page_html = con.read()
