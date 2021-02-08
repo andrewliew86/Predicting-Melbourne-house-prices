@@ -49,6 +49,7 @@ df['Address_folium'] = df['Address_folium'] + ' ' + df['Address2']
 
 # Note, the following folium and geolocator code was adapted from here: https://towardsdatascience.com/pythons-geocoding-convert-a-list-of-addresses-into-a-map-f522ef513fd6
 # Use geolocator to get latitude and longitude data from street address
+geolocator = Nominatim(user_agent="my-test-app")
 df["loc"] = df["Address_folium"].apply(lambda x: geolocator.geocode(x) if pd.notnull(x) else None)
 df["point"]= df["loc"].apply(lambda loc: tuple(loc.point) if loc else None)
 df[['lat', 'lon', 'altitude']] = pd.DataFrame(df['point'].to_list(), index=df.index)
