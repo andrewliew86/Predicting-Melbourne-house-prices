@@ -4,6 +4,8 @@ import numpy as np
 import folium  # folium is used for creating a map of the properties
 from folium.plugins import MarkerCluster
 from geopy.geocoders import Nominatim
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 df = pd.read_csv('melb_real_estate_carnegie_surrounding_30Jan21.csv')
@@ -86,24 +88,75 @@ df['Address2'] = np.where(df['Address2'] == 'NG', df['Address1'], df['Address2']
 df['Suburb'] = df['Address2'].str.extract(r'(\D+)\d* VIC')
 df['Suburb'] = df['Suburb'].str.replace(' ', '+')
 
+# Create a new column that indicates the distance from the city based on the dictionary of suburb-price pairs 
+dist_dict = {'caulfield':9.3,
+'elsternwick':8.6,
+'gardenvale':10,
+'glen+huntly':10.8,
+'mckinnon':12.6,
+'murrumbeena':12.5,
+'ormond':12.1,
+'carnegie':11.8,
+'bentleigh':13.2,
+'bentleigh+east':14.2}
 
-
-
-
-
-
-
-
-
+df['dist_cbd'] = df['Suburb'].str.lower().map(dist_dict)
 
 #%%
-col_val_count = ['Address2', 'Shower', 'Car', 'Size']
+# Some more tidying up before exploratory data analysis
+# First, remove the columns that won't be used
+df.drop(columns=['Price', 'Address1', 'Address2', 'Price_standz_list'], inplace=True)
 
-# Return the proportion of 'unique values' of the 'Address2', 'Shower', 'Car', 'Size' columns in the dataframe
+# Count unique 
+col_val_count = ['Suburb', 'Room', 'Shower', 'Car', 'Size']
+# Return the proportion of 'unique values' of the 'Suburb', 'Shower', 'Car', 'Size' columns in the dataframe
 for d in col_val_count:
     print(df[d].value_counts(normalize=True))
 
-# About 5.7% of properties are from the Melbourne Vic 3000 postcode so most of the data is spread out across various suburbs
-# About 58% of the properties have only 1 bath and ~42% have two baths
-# 78% of properties have 1 parking spot. Note that 1? property did not show any value for parking spot
-# Unfortunately, 91% of properties do not have floor size information
+# Determine the number of missing values in each column
+percent_missing = df.isnull().sum() * 100 / len(df)
+print(percent_missing.sort_values(ascending=False))
+
+# About 47% of properties are from CARNEGIE so this suburb will be the most accurate (likely) for predictions
+# About 57% of the properties have 2 baths and 42% have one bath
+# 95% of properties have 1 parking spot. 
+# Unfortunately, 88% of properties do not have floor size information so this data is likely to be less useful for house price predictions!
+# With Nans, it appears that ~22% of the price data is missing which is bad but is not unexpected!
+
+
+#%%
+from scipy import stats
+
+# Now, perform some exploratory data analysis
+# What is the distribution of house prices?
+df['Final_price'].hist()
+plt.title('Distribution of house prices')
+plt.show()
+# Distibution of house prices appears to be right skewed and median house price is between 550000 and 600000
+
+# Does the location affect house prices?
+sns.boxplot(x='Final_price', y='Suburb', data=df)
+plt.title('House prices grouped by suburb')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+# It looks like Claufield might have the highest median price and cMckinnon might have the lowest. 
+# The range for Bentleigh east and Glen Huntley appears to be the largest
+
+# Does number of bedrooms, carparks and showers affect price?
+cols_to_plot = ['Room', 'Shower', 'Car']
+for i in cols_to_plot:
+    sns.catplot(x=i, y='Final_price', hue='Suburb', data=df)
+    plt.title(i)
+    plt.show()
+# The class imbalance caused by the lack of data for each column (class) makes it difficut to interpret but generally the higher the number of bedrooms and baths, tend to be more expensive and this is independent of location!
+
+# What about distance to CBD and price of house? 
+g = sns.JointGrid(x="Final_price", y="dist_cbd", data=df)
+g.plot_joint(sns.scatterplot, s=100, alpha=.5)
+g.plot_marginals(sns.kdeplot, shade =True)
+g.annotate(stats.pearsonr)  # annote with the pearson correlation
+plt.show()    
+    
+    
+    
