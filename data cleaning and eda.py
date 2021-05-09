@@ -1,4 +1,4 @@
-# Here I clean up the data that I scraped from the website and prepare the data for a machine learning model
+# Here I clean up the data that I scraped from the website (on two seperate occassions to get more data) and prepare the data for a machine learning model
 import pandas as pd
 import numpy as np
 import folium  # folium is used for creating a map of the properties
@@ -6,9 +6,16 @@ from folium.plugins import MarkerCluster
 from geopy.geocoders import Nominatim
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy import stats
 
+# Read in the data that was scraped on two seperate occasions and combine into single dataframe
+df1 = pd.read_csv('melb_real_estate_carnegie_surrounding_30Jan21.csv')
+df2 = pd.read_csv('melb_real_estate_carnegie_surrounding_28March21.csv')
+df = pd.concat([df1, df2], axis=0)
 
-df = pd.read_csv('melb_real_estate_carnegie_surrounding_30Jan21.csv')
+# Remove duplicates (defined as having the same price and address1)
+df = df.drop_duplicates(subset=['Price', 'Address1'], keep='last')
+
 #%%
 # The first thing is to take a look at the price column as this is the most important (target column) 
 print(df['Price'].value_counts(normalize=True))
@@ -125,7 +132,6 @@ print(percent_missing.sort_values(ascending=False))
 
 
 #%%
-from scipy import stats
 
 # Now, perform some exploratory data analysis
 # What is the distribution of house prices?
@@ -157,6 +163,9 @@ g.plot_joint(sns.scatterplot, s=100, alpha=.5)
 g.plot_marginals(sns.kdeplot, shade =True)
 g.annotate(stats.pearsonr)  # annote with the pearson correlation
 plt.show()    
+# There doesnt seem to be much of any correlation but a better measure could be to use the exact location of the house (based on address) and calculate distance to the CBD
+#%%
+
     
     
     
