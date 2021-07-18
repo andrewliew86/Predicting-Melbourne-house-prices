@@ -7,6 +7,8 @@ from geopy.geocoders import Nominatim
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
+import pandas.api.types as ptypes
+
 
 # Read in the data that was scraped on two seperate occasions and combine into single dataframe
 df1 = pd.read_csv('melb_real_estate_carnegie_surrounding_30Jan21.csv')
@@ -53,7 +55,7 @@ df['Final_price'] = df['Price_standz_list'].apply(clean_price)
 
 #%% Draw a Folium map to check that all the addresses are in the same proximity of each other 
 # Extract the street name and add combine street name with suburb name for the geolcator 
-df['Address_folium'] = df['Address1'].str.extract(r'(\D+,)')
+df['Address_folium'] = df['Address1'].str.extract(r'(\D+,)');
 df['Address_folium'] = df['Address_folium'] + ' ' + df['Address2']
 
 # Note, the following folium and geolocator code was adapted from here: https://towardsdatascience.com/pythons-geocoding-convert-a-list-of-addresses-into-a-map-f522ef513fd6
@@ -112,7 +114,7 @@ df['dist_cbd'] = df['Suburb'].str.lower().map(dist_dict)
 #%%
 # Some more tidying up before exploratory data analysis
 # First, remove the columns that won't be used
-df.drop(columns=['Price', 'Address1', 'Address2', 'Price_standz_list'], inplace=True)
+df.drop(columns=['Price', 'Address1', 'Price_standz_list'], inplace=True)
 
 # Count unique 
 col_val_count = ['Suburb', 'Room', 'Shower', 'Car', 'Size']
@@ -132,7 +134,6 @@ print(percent_missing.sort_values(ascending=False))
 
 
 #%%
-
 # Now, perform some exploratory data analysis
 # What is the distribution of house prices?
 df['Final_price'].hist()
@@ -165,7 +166,22 @@ g.annotate(stats.pearsonr)  # annote with the pearson correlation
 plt.show()    
 # There doesnt seem to be much of any correlation but a better measure could be to use the exact location of the house (based on address) and calculate distance to the CBD
 #%%
+# Now, prep the data for machine learning 
+# For 'Room', 'Shower' and 'Car' columns, there are string characters (e.g. 2 rooms) so we need to keep numeric characters only
+df["Room"] = df["Room"].str.extract('(\d+)')
+df["Shower"] = df["Shower"].str.extract('(\d+)')
+df["Car"] = df["Car"].str.extract('(\d+)')
 
+# Use assert to make sure all strings have been removed from those columns (Check all columns are numeric)
+cols_to_check = ["Room", "Shower", "Car"]
+assert all(ptypes.is_numeric_dtype(df[col]) for col in cols_to_check)
+
+# Lets remove columns that will not be used for ML modelling
+df_final = df.drop(["Address2", "Size"], axis=1)
+
+# Export data to a csv file.
+# index=False is used to prevent pandas from creating the index column when exporting dataframe to csv
+df_final.to_csv("house_price_prediction.csv", index=False)
     
     
     
