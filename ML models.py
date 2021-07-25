@@ -1,10 +1,10 @@
 # ML models testing and prediction
 # Lets start building some models to see if we can get accurate predictions
 import pandas as pd 
-import lazypredict
 from lazypredict.Supervised import LazyRegressor
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+import numpy as np
 
 # Get the 'clean' housing data (output from the 'data cleaning and EDA' file)
 df = pd.read_csv("house_price_prediction.csv")
@@ -32,17 +32,30 @@ test_only_set = df.drop(train_opt_set.index)
 # Prepare dataset for testing by splitting the dataset into 80% train and then 20% test
 X = train_opt_set.drop("Final_price", axis=1)
 y = train_opt_set["Final_price"]
-X_train, y_train, X_test, y_test = train_test_split(X, y, 0.2, stratify=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 
 
 
 #%%
+# Before performing ML, determine the naive price prediction 
+# Calculate the performance (RMSE)  when mean or median of train dataset are used to naively predict the price of houses 
+rmse_naive_mean = (sum((y_test - np.mean(y_train))**2)/len(y_test))**(1/2)
+rmse_naive_med = (sum((y_test - np.median(y_train))**2)/len(y_test))**(1/2)
+# Using the median price of the training set, we get an RMSE of 77448
+# Any machine learning model RMSE should be lower than this to be worth pursuing! 
 
-# Use lazy predict to test multiple models 
-# Lazy predict will give you an idea of which models perform the best
-# YOu can then select the model and perform hyperparamter tuning to fine tune the model further
-# Seee here: https://towardsdatascience.com/how-to-run-30-machine-learning-models-with-2-lines-of-code-d0f94a537e52
+#%%
+# Lazy predict will give you an idea of which models perform the best - it tests multiple models to give you an idea of which one is best!
+# You can then select the model and perform hyperparamter tuning to fine tune the model further
+# See here: https://towardsdatascience.com/how-to-run-30-machine-learning-models-with-2-lines-of-code-d0f94a537e52
+# Note: If you have problems installing lazypredict (because of xgboost), install xgboost first (seperately) using conda and then try installing lazypredict 
+# Fit all models
+reg = LazyRegressor(predictions=True)
+models, predictions = reg.fit(X_train, X_test, y_train, y_test)
 
-
+# Interesting! The top 5 models (when sorted by R-squared and RMSE) are all variations of linear regression! 
+# HuberRegressor was found to be the best base model with an RMSE of 61979.8 - which is lower than the rmse_naive_med
+# HuberRegressor is a linear regression technique that is more 'tolerant' to outliers which could be one reason why the other models performed poorly
+# The HuberRegressor is different to Ridge because it applies a linear loss to samples that are classified as outliers. A sample is classified as an inlier if the absolute error of that sample is lesser than a certain threshold.
 #%%
