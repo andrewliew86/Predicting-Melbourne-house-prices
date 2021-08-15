@@ -58,4 +58,6 @@ models, predictions = reg.fit(X_train, X_test, y_train, y_test)
 # HuberRegressor was found to be the best base model with an RMSE of 61979.8 - which is lower than the rmse_naive_med
 # HuberRegressor is a linear regression technique that is more 'tolerant' to outliers which could be one reason why the other models performed poorly
 # The HuberRegressor is different to Ridge because it applies a linear loss to samples that are classified as outliers. A sample is classified as an inlier if the absolute error of that sample is lesser than a certain threshold.
+# See here for explanation of Huber regression https://heartbeat.fritz.ai/5-regression-loss-functions-all-machine-learners-should-know-4fb140e9d4b0
 #%%
+# Now, perform hyperparamater tuning with Huber regressor 
