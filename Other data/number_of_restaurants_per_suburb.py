@@ -9,8 +9,8 @@ CLIENT_ID = input("Enter Foursquare client ID: ")  # client ID from developer ac
 CLIENT_SECRET = input("Enter Foursquare client secret: ")  # client secret from developer account
 VERSION = "20180604"
 LIMIT = 1000  # Number of results limit
-neighborhood_latitude = -37.88892985810115  # latitude of location/suburb
-neighborhood_longitude = 145.06095542883534  # longitude of location/suburb
+neighborhood_latitude = -37.88867  # latitude of location/suburb
+neighborhood_longitude = 145.05713  # longitude of location/suburb
 radius = 500  # what is the radius of the search from the centre of lat and long (in metres)
 
 # QUery the foursquare API
@@ -27,6 +27,7 @@ url = "https://api.foursquare.com/v2/venues/explore?&categoryId={}&client_id={}&
 # Read the returned JSON results
 results = requests.get(url).json()
 
+# Note, you will need to run the above (with different lat and long) for each suburb with a for loop
 
 #%%
 # Obtain a list of venues with the specific restaurant names
