@@ -1,10 +1,16 @@
 # ML models testing and prediction
 # Lets start building some models to see if we can get accurate predictions
 import pandas as pd 
+import numpy as np
+from matplotlib import pyplot
 from lazypredict.Supervised import LazyRegressor
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-import numpy as np
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedKFold
+from sklearn.linear_model import HuberRegressor, LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.ensemble import GradientBoostingRegressor, StackingRegressor
 
 # Get the 'clean' housing data (output from the 'data cleaning and EDA' file)
 df = pd.read_csv("house_price_prediction.csv")
@@ -57,7 +63,61 @@ models, predictions = reg.fit(X_train, X_test, y_train, y_test)
 # Interesting! The top 5 models (when sorted by R-squared and RMSE) are all variations of linear regression! 
 # HuberRegressor was found to be the best base model with an RMSE of 61979.8 - which is lower than the rmse_naive_med
 # HuberRegressor is a linear regression technique that is more 'tolerant' to outliers which could be one reason why the other models performed poorly
-# The HuberRegressor is different to Ridge because it applies a linear loss to samples that are classified as outliers. A sample is classified as an inlier if the absolute error of that sample is lesser than a certain threshold.
+# The HuberRegressor is different to Ridge because it applies a linear loss to samples that are classified as outliers. A sample is classified as an inlier if the absolute error of that sample is less than a certain threshold.
 # See here for explanation of Huber regression https://heartbeat.fritz.ai/5-regression-loss-functions-all-machine-learners-should-know-4fb140e9d4b0
 #%%
-# Now, perform hyperparamater tuning with Huber regressor 
+# Another idea to imporve performance is to stack the different regression models
+# See https://machinelearningmastery.com/stacking-ensemble-machine-learning-with-python/
+
+# Get a stacking ensemble of models
+# Here we are stacking 4 models (KNN, huber regressor, gradient boosting and then linear regression) 
+def get_stacking():
+    """ Models used in stacking regressor"""
+    level0 = list()
+    level0.append(('knn', KNeighborsRegressor()))
+    level0.append(('huber', HuberRegressor()))
+    level0.append(('gbr', GradientBoostingRegressor()))
+    # define meta learner model
+    level1 = LinearRegression()
+    # define the stacking ensemble
+    model = StackingRegressor(estimators=level0, final_estimator=level1, cv=3)
+    return model
+
+# Get a list of models to evaluate
+# This is so that we can compare the performance of individual models vs stacking them together
+def get_models():
+    """Dictionary containing individual models used in the stack (for eval purposes)"""
+    models = dict()
+    models['knn'] = KNeighborsRegressor()
+    models['huber'] = HuberRegressor()
+    models['gbr'] = GradientBoostingRegressor()
+    models['stacking'] = get_stacking()
+    return models
+
+# Evaluate a given model using repeated 3 fold cross-validation
+def evaluate_model(model, X, y):
+    """Evaluates each model using Kfold validation and calculates the RMSE for each model"""
+    cv = RepeatedKFold(n_splits=3, n_repeats=3, random_state=1)
+    scores = cross_val_score(model, X, y, scoring='neg_root_mean_squared_error', cv=cv, n_jobs=-1, error_score='raise')
+    return scores
+
+
+# Get the models to evaluate
+models = get_models()
+# Evaluate the models and store results
+results, names = list(), list()
+
+print("Negative root mean squared error for each model (+/- standard deviation):")
+# Use a for loop to evaulate all the models
+for name, model in models.items():
+    scores = evaluate_model(model, X_train, y_train)
+    results.append(scores)
+    names.append(name)
+    print('>%s %.3f (%.3f)' % (name, np.mean(scores), np.std(scores)))
+    
+# Plot model performance for comparison using a boxplot
+pyplot.boxplot(results, labels=names, showmeans=True)
+pyplot.show()
+
+# Stacking did not seam to improve the model hugely compared with Huber although Huber does a have a few outliers in its RMSE values
+# Further hyperparameter tuning with the huber regresor is probably the best option
